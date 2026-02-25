@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kanban Demo</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f9f9f9; }
+        #login-container {
+            max-width: 350px;
+            margin: 40px auto;
+            padding: 24px 32px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        #login-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #333;
+        }
+        #login-form input {
+            width: 100%;
+            padding: 8px 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 15px;
+        }
+        #login-form button {
+            width: 100%;
+            padding: 10px;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        #login-form button:hover {
+            background: #1565c0;
+        }
+        #login-error {
+            color: #d32f2f;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .kanban-board { display: flex; gap: 20px; }
+        .kanban-column { background: #f4f4f4; padding: 20px; border-radius: 8px; min-width: 200px; }
+        .kanban-column h2 { margin-top: 0; }
+        .kanban-card { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <h1>Kanban Board Demo</h1>
+    <div id="login-container">
+        <form id="login-form">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required><br>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required><br>
+            <button type="submit">Login</button>
+        </form>
+        <div id="login-error" style="color:red;display:none;">Invalid credentials</div>
+    </div>
+    <div id="kanban-board" style="display:none;">
+        <div class="kanban-board" id="board-columns"></div>
+        <button id="logout-btn">Logout</button>
+    </div>
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const loginContainer = document.getElementById('login-container');
+        const kanbanBoard = document.getElementById('kanban-board');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        // Force login form to show on page load
+        window.onload = function() {
+            loginContainer.style.display = 'block';
+            kanbanBoard.style.display = 'none';
+        };
+
+        function renderBoard(board) {
+            const boardColumns = document.getElementById('board-columns');
+            boardColumns.innerHTML = '';
+            board.columns.forEach(col => {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'kanban-column';
+                colDiv.innerHTML = `<h2>${col.title}</h2>`;
+                col.cards.forEach(card => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'kanban-card';
+                    cardDiv.textContent = card;
+                    colDiv.appendChild(cardDiv);
+                });
+                boardColumns.appendChild(colDiv);
+            });
+        }
+
+        async function loadKanban() {
+            try {
+                const res = await fetch('/api/kanban/user');
+                if (!res.ok) throw new Error('Failed to load Kanban');
+                const board = await res.json();
+                renderBoard(board);
+            } catch (e) {
+                renderBoard({columns: []});
+            }
+        }
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (username === 'user' && password === 'password') {
+                loginContainer.style.display = 'none';
+                kanbanBoard.style.display = 'block';
+                loginError.style.display = 'none';
+                loadKanban();
+            } else {
+                loginError.style.display = 'block';
+            }
+        });
+        logoutBtn.addEventListener('click', function() {
+            kanbanBoard.style.display = 'none';
+            loginContainer.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
