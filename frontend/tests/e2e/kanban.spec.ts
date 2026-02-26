@@ -21,13 +21,21 @@ const MOCK_BOARD: Board = {
   ],
 };
 
-async function mockApi(page: Parameters<Parameters<typeof test>[1]>[0]["page"]) {
+type Page = Parameters<Parameters<typeof test>[1]>[0]["page"];
+
+async function mockApi(page: Page) {
   await page.route("/api/kanban/user", async (route) => {
     if (route.request().method() === "GET") {
       await route.fulfill({ json: MOCK_BOARD });
     } else {
       await route.fulfill({ json: { status: "saved" } });
     }
+  });
+}
+
+async function mockAiApi(page: Page, response: { response: string; kanban_update?: Board }) {
+  await page.route("/api/ai-kanban-structured/user", async (route) => {
+    await route.fulfill({ json: response });
   });
 }
 
@@ -96,7 +104,7 @@ test.describe("Kanban board", () => {
     const backlogButton = page.getByRole("button", { name: "Backlog" });
     await backlogButton.click();
 
-    const input = page.getByRole("textbox");
+    const input = page.getByRole("textbox").first();
     await input.fill("Ideas");
     await input.blur();
 
@@ -124,5 +132,43 @@ test.describe("Kanban board", () => {
     await page.mouse.up();
 
     await expect(page.getByRole("button", { name: "Done" })).toBeVisible();
+  });
+});
+
+test.describe("AI Sidebar", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockApi(page);
+    await page.goto("/");
+    await login(page);
+  });
+
+  test("sidebar is visible by default and can be toggled", async ({ page }) => {
+    await expect(page.getByLabel("AI chat")).toBeVisible();
+    await page.getByRole("button", { name: "Hide AI sidebar" }).click();
+    await expect(page.getByLabel("AI chat")).not.toBeVisible();
+    await page.getByRole("button", { name: "Show AI sidebar" }).click();
+    await expect(page.getByLabel("AI chat")).toBeVisible();
+  });
+
+  test("sends a message and shows AI response", async ({ page }) => {
+    await mockAiApi(page, { response: "Here is a summary of your board." });
+    await page.getByPlaceholder("Ask the AI…").fill("Summarize my board");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Here is a summary of your board.")).toBeVisible();
+  });
+
+  test("shows board-updated badge when AI updates the board", async ({ page }) => {
+    const updatedBoard: Board = {
+      ...MOCK_BOARD,
+      cards: [
+        ...MOCK_BOARD.cards,
+        { id: "card-ai-1", columnId: "todo", title: "AI added card", details: "From AI", position: 1 },
+      ],
+    };
+    await mockAiApi(page, { response: "I added a card for you.", kanban_update: updatedBoard });
+    await page.getByPlaceholder("Ask the AI…").fill("Add a card called AI added card");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Board updated")).toBeVisible();
+    await expect(page.getByText("AI added card").first()).toBeVisible();
   });
 });

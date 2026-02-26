@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Board } from "@/src/components/kanban/Board";
+import { AiSidebar } from "@/src/components/kanban/AiSidebar";
 import { useBoardState } from "@/src/lib/kanban/useBoardState";
 import { LoginForm } from "@/src/components/kanban/LoginForm";
 
@@ -12,12 +13,13 @@ function BoardPage({
   username: string;
   onLogout: () => void;
 }) {
-  const { board, renameColumn, addCard, deleteCard, moveCard } =
+  const { board, replaceBoard, renameColumn, addCard, deleteCard, moveCard } =
     useBoardState(username);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="app-shell">
-      <main className="app-shell-main">
+    <div className="flex h-screen overflow-hidden bg-transparent text-slate-50">
+      <main className="flex-1 overflow-auto px-4 py-6 sm:px-8 sm:py-10">
         <section className="kanban-board" aria-label="Kanban board">
           <header className="kanban-header">
             <div>
@@ -31,13 +33,23 @@ function BoardPage({
                 experience.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="self-start rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400 transition hover:border-slate-500 hover:text-slate-200"
-            >
-              Sign out
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((o) => !o)}
+                className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400 transition hover:border-[var(--color-kanban-primary)] hover:text-[var(--color-kanban-primary)]"
+                aria-label={sidebarOpen ? "Hide AI sidebar" : "Show AI sidebar"}
+              >
+                {sidebarOpen ? "Hide AI" : "AI Assistant"}
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-400 transition hover:border-slate-500 hover:text-slate-200"
+              >
+                Sign out
+              </button>
+            </div>
           </header>
 
           <Board
@@ -49,6 +61,16 @@ function BoardPage({
           />
         </section>
       </main>
+
+      {sidebarOpen && (
+        <aside className="ai-sidebar-wrapper" aria-label="AI chat">
+          <AiSidebar
+            username={username}
+            board={board}
+            onBoardUpdate={replaceBoard}
+          />
+        </aside>
+      )}
     </div>
   );
 }
@@ -61,7 +83,6 @@ export default function Home() {
     setUsername(stored ?? "");
   }, []);
 
-  // null = hydrating (avoid flash)
   if (username === null) return null;
 
   if (!username) {

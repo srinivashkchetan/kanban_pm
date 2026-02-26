@@ -118,3 +118,56 @@ body {
   @apply inline-flex items-center rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-medium text-slate-200 ring-1 ring-slate-700/80;
 }
 
+/* AI Sidebar */
+.ai-sidebar-wrapper {
+  @apply w-80 flex-shrink-0 border-l border-slate-800/60 bg-slate-950/80 backdrop-blur flex flex-col overflow-hidden;
+}
+
+.ai-sidebar {
+  @apply flex flex-1 flex-col overflow-hidden h-full;
+}
+
+.ai-sidebar-header {
+  @apply flex items-center justify-between border-b border-slate-800/60 px-4 py-3;
+}
+
+.ai-messages {
+  @apply flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3;
+}
+
+.ai-empty-hint {
+  @apply text-xs text-slate-500 text-center mt-4 leading-relaxed;
+}
+
+.ai-message {
+  @apply max-w-[90%] rounded-2xl px-3 py-2;
+}
+
+.ai-message-user {
+  @apply self-end bg-[var(--color-kanban-secondary)] text-white;
+}
+
+.ai-message-assistant {
+  @apply self-start bg-slate-800/80 text-slate-200;
+}
+
+.ai-board-updated-badge {
+  @apply mt-1.5 inline-flex items-center rounded-full bg-[var(--color-kanban-accent)]/20 px-2 py-0.5 text-[10px] font-medium text-[var(--color-kanban-accent)];
+}
+
+.ai-thinking {
+  @apply text-xs text-slate-400 italic;
+}
+
+.ai-input-area {
+  @apply flex flex-col gap-2 border-t border-slate-800/60 p-3;
+}
+
+.ai-input {
+  @apply w-full resize-none rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-50 outline-none placeholder:text-slate-500 focus:border-[var(--color-kanban-primary)] focus:ring-1 focus:ring-[var(--color-kanban-primary)];
+}
+
+.ai-send-button {
+  @apply self-end rounded-full bg-[var(--color-kanban-primary)] px-4 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed;
+}
+

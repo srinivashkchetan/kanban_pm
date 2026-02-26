@@ -64,8 +64,17 @@ export function useBoardState(username: string) {
     [username],
   );
 
+  const replaceBoard = useCallback(
+    (newBoard: Board) => {
+      setBoard(newBoard);
+      saveBoard(username, newBoard);
+    },
+    [username],
+  );
+
   return {
     board,
+    replaceBoard,
     renameColumn,
     addCard,
     deleteCard,
