@@ -3,7 +3,26 @@
 <head>
     <title>Kanban Demo</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f9f9f9; user-select: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        :root {
+            --ink: #0f1a2b;
+            --muted: #5f6b7a;
+            --panel: #ffffff;
+            --accent: #157f78;
+            --accent-strong: #0f5f5a;
+            --bg-a: #f4efe8;
+            --bg-b: #e2f0ee;
+            --line: #d8e1e8;
+            --shadow: 0 16px 40px rgba(15, 26, 43, 0.12);
+        }
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            margin: 32px;
+            color: var(--ink);
+            background: radial-gradient(circle at top left, var(--bg-b), transparent 50%),
+                        radial-gradient(circle at bottom right, #fbe8d6, transparent 48%),
+                        var(--bg-a);
+        }
         #login-container {
             max-width: 350px;
             margin: 40px auto;
@@ -45,12 +64,32 @@
             margin-top: 8px;
             font-size: 14px;
         }
+        .app-shell { display: flex; gap: 24px; align-items: flex-start; }
+        .board-pane { flex: 1; min-width: 0; background: rgba(255,255,255,0.6); padding: 18px; border-radius: 18px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.7); }
         .kanban-board { display: flex; gap: 20px; }
-        .kanban-column { background: #f4f4f4; padding: 20px; border-radius: 8px; min-width: 200px; }
+        .kanban-column { background: #f4f4f4; padding: 20px; border-radius: 12px; min-width: 200px; border: 1px solid var(--line); }
         .kanban-column.drag-over { outline: 2px dashed #1976d2; }
         .kanban-column h2 { margin-top: 0; }
         .kanban-card { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); user-select: none; -webkit-user-drag: none; touch-action: none; cursor: grab; }
-        .drag-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.8; background: #fff; padding: 10px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .drag-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.8; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 6px 16px rgba(15,26,43,0.2); }
+        .assistant-pane { flex: 0 0 320px; background: var(--panel); border-radius: 18px; box-shadow: var(--shadow); border: 1px solid var(--line); display: flex; flex-direction: column; min-height: 540px; }
+        .assistant-header { padding: 16px 18px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+        .assistant-title { font-size: 18px; font-weight: 600; }
+        .assistant-subtitle { color: var(--muted); font-size: 12px; }
+        .chat-log { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
+        .chat-bubble { padding: 10px 12px; border-radius: 12px; max-width: 90%; line-height: 1.4; animation: rise 0.2s ease-out; }
+        .chat-bubble.user { align-self: flex-end; background: #e8f4f3; color: var(--ink); }
+        .chat-bubble.assistant { align-self: flex-start; background: #f4f1ed; color: var(--ink); }
+        .chat-form { display: flex; gap: 8px; padding: 12px 14px 16px; border-top: 1px solid var(--line); }
+        .chat-form input { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-family: inherit; }
+        .chat-form button { border: none; border-radius: 10px; background: var(--accent); color: #fff; padding: 10px 14px; cursor: pointer; font-weight: 600; }
+        .chat-form button:hover { background: var(--accent-strong); }
+        .chat-status { padding: 0 16px 12px; font-size: 12px; color: var(--muted); }
+        @keyframes rise { from { transform: translateY(4px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @media (max-width: 980px) {
+            .app-shell { flex-direction: column; }
+            .assistant-pane { min-height: 420px; }
+        }
     </style>
 </head>
 <body>
@@ -66,8 +105,26 @@
         <div id="login-error" style="color:red;display:none;">Invalid credentials</div>
     </div>
     <div id="kanban-board" style="display:none;">
-        <div class="kanban-board" id="board-columns"></div>
-        <button id="logout-btn">Logout</button>
+        <div class="app-shell">
+            <div class="board-pane">
+                <div class="kanban-board" id="board-columns"></div>
+                <button id="logout-btn">Logout</button>
+            </div>
+            <aside class="assistant-pane">
+                <div class="assistant-header">
+                    <div>
+                        <div class="assistant-title">AI Sidekick</div>
+                        <div class="assistant-subtitle">Ask for help or automate updates</div>
+                    </div>
+                </div>
+                <div class="chat-log" id="chat-log"></div>
+                <div class="chat-status" id="chat-status">Ready when you are.</div>
+                <form class="chat-form" id="chat-form">
+                    <input id="chat-input" type="text" placeholder="Ask the assistant to update your board..." autocomplete="off" />
+                    <button type="submit">Send</button>
+                </form>
+            </aside>
+        </div>
     </div>
     <script>
         const loginForm = document.getElementById('login-form');
@@ -75,6 +132,10 @@
         const kanbanBoard = document.getElementById('kanban-board');
         const loginError = document.getElementById('login-error');
         const logoutBtn = document.getElementById('logout-btn');
+        const chatLog = document.getElementById('chat-log');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatStatus = document.getElementById('chat-status');
         // Force login form to show on page load
         window.onload = function() {
             loginContainer.style.display = 'block';
@@ -84,6 +145,15 @@
         let currentBoard = null;
         let dragState = null;
         let dragListenersAttached = false;
+        const chatHistory = [];
+
+        function appendChatMessage(role, text) {
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${role}`;
+            bubble.textContent = text;
+            chatLog.appendChild(bubble);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
 
         function updateDragPosition(clientX, clientY) {
             if (!dragState) return;
@@ -207,6 +277,37 @@
             }
         }
 
+        async function runAssistant(question) {
+            if (!currentBoard) {
+                await loadKanban();
+            }
+            chatStatus.textContent = 'Thinking...';
+            try {
+                const res = await fetch('/api/ai-kanban-structured/user', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        kanban: currentBoard,
+                        question,
+                        history: chatHistory
+                    })
+                });
+                const data = await res.json();
+                const assistantText = data.response || data.result || data.message || 'Got it.';
+                appendChatMessage('assistant', assistantText);
+                chatHistory.push({role: 'assistant', content: assistantText});
+                if (data.kanban_update) {
+                    currentBoard = data.kanban_update;
+                    renderBoard(currentBoard);
+                    await saveKanban(currentBoard);
+                }
+                chatStatus.textContent = 'Ready for the next move.';
+            } catch (e) {
+                appendChatMessage('assistant', 'Sorry, I ran into an error.');
+                chatStatus.textContent = 'Error talking to assistant.';
+            }
+        }
+
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const username = document.getElementById('username').value;
@@ -215,10 +316,22 @@
                 loginContainer.style.display = 'none';
                 kanbanBoard.style.display = 'block';
                 loginError.style.display = 'none';
+                chatLog.innerHTML = '';
+                chatHistory.length = 0;
+                chatStatus.textContent = 'Ready when you are.';
                 loadKanban();
             } else {
                 loginError.style.display = 'block';
             }
+        });
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text) return;
+            appendChatMessage('user', text);
+            chatHistory.push({role: 'user', content: text});
+            chatInput.value = '';
+            runAssistant(text);
         });
         logoutBtn.addEventListener('click', function() {
             kanbanBoard.style.display = 'none';
