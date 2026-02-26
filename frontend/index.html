@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kanban Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .kanban-board { display: flex; gap: 20px; }
+        .kanban-column { background: #f4f4f4; padding: 20px; border-radius: 8px; min-width: 200px; }
+        .kanban-column h2 { margin-top: 0; }
+        .kanban-card { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <h1>Kanban Board Demo</h1>
+    <div class="kanban-board">
+        <div class="kanban-column">
+            <h2>To Do</h2>
+            <div class="kanban-card">Task 1</div>
+            <div class="kanban-card">Task 2</div>
+        </div>
+        <div class="kanban-column">
+            <h2>In Progress</h2>
+            <div class="kanban-card">Task 3</div>
+        </div>
+        <div class="kanban-column">
+            <h2>Done</h2>
+            <div class="kanban-card">Task 4</div>
+        </div>
+    </div>
+</body>
+</html>

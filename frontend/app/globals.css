@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-kanban-accent: #ecad0a;
+  --color-kanban-primary: #209dd7;
+  --color-kanban-secondary: #753991;
+  --color-kanban-navy: #032147;
+  --color-kanban-muted: #888888;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #0b436f 0, #020617 45%, #000 100%);
+  color: var(--foreground);
+}
+
+.app-shell {
+  @apply flex min-h-screen flex-col bg-transparent text-slate-50;
+}
+
+.app-shell-main {
+  @apply flex-1 px-4 py-6 sm:px-8 sm:py-10;
+}
+
+.kanban-board {
+  @apply mx-auto flex max-w-6xl flex-col gap-6;
+}
+
+.kanban-header {
+  @apply flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between;
+}
+
+.kanban-title {
+  @apply text-3xl font-semibold tracking-tight;
+  color: var(--color-kanban-navy);
+}
+
+.kanban-subtitle {
+  @apply text-sm sm:text-base;
+  color: var(--color-kanban-muted);
+}
+
+.kanban-columns {
+  @apply mt-4 flex gap-4 overflow-x-auto pb-3;
+}
+
+.kanban-column {
+  @apply flex w-64 shrink-0 flex-col rounded-2xl border border-slate-800/60 bg-slate-900/60 p-3 shadow-lg backdrop-blur;
+}
+
+.kanban-column-header {
+  @apply mb-2 flex items-center justify-between gap-2;
+}
+
+.kanban-column-title {
+  @apply rounded px-1 text-sm font-semibold tracking-wide uppercase text-slate-100;
+}
+
+.kanban-column-title-input {
+  @apply w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-xs font-semibold uppercase text-slate-100 outline-none ring-1 ring-transparent focus:ring-[var(--color-kanban-primary)];
+}
+
+.kanban-column-count {
+  @apply rounded-full bg-slate-800 px-2 py-0.5 text-[11px] font-medium text-slate-300;
+}
+
+.kanban-card-list {
+  @apply flex flex-1 flex-col gap-2 pt-1;
+}
+
+.kanban-card {
+  @apply rounded-xl border border-slate-800 bg-slate-900/90 p-3 text-sm shadow-sm transition hover:border-[var(--color-kanban-primary)] hover:shadow-lg;
+}
+
+.kanban-card-title {
+  @apply mb-1 text-sm font-medium text-slate-50;
+}
+
+.kanban-card-details {
+  @apply text-xs leading-relaxed text-slate-300;
+}
+
+.kanban-card-footer {
+  @apply mt-2 flex items-center justify-between;
+}
+
+.kanban-card-delete {
+  @apply inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-800 text-[11px] text-slate-400 transition hover:border-red-500/60 hover:bg-red-500/10 hover:text-red-300;
+}
+
+.kanban-add-card {
+  @apply mt-2 flex flex-col gap-2 rounded-xl border border-dashed border-slate-700/80 bg-slate-900/50 p-3 text-xs text-slate-300;
+}
+
+.kanban-add-card-button {
+  @apply inline-flex items-center gap-1 self-start rounded-full bg-[var(--color-kanban-secondary)] px-3 py-1 text-xs font-medium text-white shadow-sm transition hover:bg-purple-700;
+}
+
+.kanban-input {
+  @apply w-full rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-slate-50 outline-none ring-1 ring-transparent placeholder:text-slate-500 focus:ring-[var(--color-kanban-primary)];
+}
+
+.kanban-textarea {
+  @apply h-20 resize-none rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-xs text-slate-50 outline-none ring-1 ring-transparent placeholder:text-slate-500 focus:ring-[var(--color-kanban-primary)];
+}
+
+.pill-badge {
+  @apply inline-flex items-center rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-medium text-slate-200 ring-1 ring-slate-700/80;
+}
+
