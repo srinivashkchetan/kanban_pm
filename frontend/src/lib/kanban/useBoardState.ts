@@ -1,6 +1,6 @@
  "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { Board, ColumnId } from "./types";
 import {
   addCard as addCardLogic,
@@ -9,30 +9,59 @@ import {
   moveCard as moveCardLogic,
   renameColumn as renameColumnLogic,
 } from "./boardLogic";
+import { fetchBoard, saveBoard } from "./api";
 
-export function useBoardState() {
+export function useBoardState(username: string) {
   const [board, setBoard] = useState<Board>(() => createInitialBoard());
 
-  const renameColumn = useCallback((columnId: ColumnId, title: string) => {
-    setBoard((prev) => renameColumnLogic(prev, columnId, title));
-  }, []);
+  useEffect(() => {
+    fetchBoard(username).then((remote) => {
+      if (remote) setBoard(remote);
+    });
+  }, [username]);
+
+  const renameColumn = useCallback(
+    (columnId: ColumnId, title: string) => {
+      setBoard((prev) => {
+        const next = renameColumnLogic(prev, columnId, title);
+        saveBoard(username, next);
+        return next;
+      });
+    },
+    [username],
+  );
 
   const addCard = useCallback(
     (columnId: ColumnId, input: { title: string; details?: string }) => {
-      setBoard((prev) => addCardLogic(prev, columnId, input));
+      setBoard((prev) => {
+        const next = addCardLogic(prev, columnId, input);
+        saveBoard(username, next);
+        return next;
+      });
     },
-    [],
+    [username],
   );
 
-  const deleteCard = useCallback((cardId: string) => {
-    setBoard((prev) => deleteCardLogic(prev, cardId));
-  }, []);
+  const deleteCard = useCallback(
+    (cardId: string) => {
+      setBoard((prev) => {
+        const next = deleteCardLogic(prev, cardId);
+        saveBoard(username, next);
+        return next;
+      });
+    },
+    [username],
+  );
 
   const moveCard = useCallback(
     (cardId: string, toColumnId: ColumnId, toIndex: number) => {
-      setBoard((prev) => moveCardLogic(prev, cardId, toColumnId, toIndex));
+      setBoard((prev) => {
+        const next = moveCardLogic(prev, cardId, toColumnId, toIndex);
+        saveBoard(username, next);
+        return next;
+      });
     },
-    [],
+    [username],
   );
 
   return {
@@ -43,4 +72,3 @@ export function useBoardState() {
     moveCard,
   };
 }
-
