@@ -1,15 +1,42 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 import os
 import json
 import sys
-
 import openai
 
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 app = FastAPI()
 
+# Structured AI endpoint: receives Kanban JSON, user question, and conversation history
+@app.post("/api/ai-kanban/{username}")
+async def ai_kanban(username: str, request: Request):
+    if not OPENAI_API_KEY:
+        return {"error": "OPENAI_API_KEY not set"}
+    try:
+        body = await request.json()
+        kanban = body.get("kanban")
+        question = body.get("question")
+        history = body.get("history", [])
+        messages = []
+        # Add conversation history
+        for msg in history:
+            messages.append(msg)
+        # Add Kanban board context
+        messages.append({"role": "system", "content": f"Current Kanban board: {json.dumps(kanban)}"})
+        # Add user question
+        messages.append({"role": "user", "content": question})
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages
+        )
+        answer = response.choices[0].message.content
+        # Optionally, parse for structured output (e.g., JSON update)
+        return {"result": answer}
+    except Exception as e:
+        return {"error": str(e)}
 @app.get("/", response_class=HTMLResponse)
 def hello_world():
     frontend_path = os.path.join(os.path.dirname(__file__), '../frontend/index.html')
