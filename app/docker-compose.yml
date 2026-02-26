@@ -8,3 +8,4 @@ services:
       - "8000:8000"
     environment:
       - OPENAI_API_KEY
+      - KANBAN_DIR=/app/kanban_data

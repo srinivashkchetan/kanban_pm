@@ -7,7 +7,7 @@ test.describe("Kanban board", () => {
   });
 
   test("shows dummy board with 5 columns", async ({ page }) => {
-    const columns = page.getByRole("button", { name: /backlog|to do|in progress|review|done/i });
+    const columns = page.getByRole("listitem");
     await expect(columns).toHaveCount(5);
   });
 
@@ -17,7 +17,7 @@ test.describe("Kanban board", () => {
 
     await page.getByPlaceholder("Card title").fill("Playwright card");
     await page.getByPlaceholder("Details (optional)").fill("Created in E2E test");
-    await page.getByText("+ Add").click();
+    await page.getByText("+ Add", { exact: true }).click();
 
     await expect(page.getByText("Playwright card")).toBeVisible();
   });
@@ -26,7 +26,7 @@ test.describe("Kanban board", () => {
     const backlogButton = page.getByRole("button", { name: "Backlog" });
     await backlogButton.click();
 
-    const input = page.getByDisplayValue("Backlog");
+    const input = page.getByRole("textbox");
     await input.fill("Ideas");
     await input.blur();
 
@@ -58,4 +58,3 @@ test.describe("Kanban board", () => {
     await expect(page.getByRole("button", { name: "Done" })).toBeVisible();
   });
 });
-

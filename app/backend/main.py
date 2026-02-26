@@ -102,7 +102,7 @@ def ai_test():
     except Exception as e:
         return {"error": str(e)}
 
-KANBAN_DIR = '/app/kanban_data'
+KANBAN_DIR = os.environ.get('KANBAN_DIR', os.path.join(os.path.dirname(__file__), 'kanban_data'))
 
 def get_kanban_path(username):
     return os.path.join(KANBAN_DIR, f"{username}.json")
