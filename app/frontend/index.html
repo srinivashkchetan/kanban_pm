@@ -3,7 +3,7 @@
 <head>
     <title>Kanban Demo</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f9f9f9; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f9f9f9; user-select: none; }
         #login-container {
             max-width: 350px;
             margin: 40px auto;
@@ -47,8 +47,10 @@
         }
         .kanban-board { display: flex; gap: 20px; }
         .kanban-column { background: #f4f4f4; padding: 20px; border-radius: 8px; min-width: 200px; }
+        .kanban-column.drag-over { outline: 2px dashed #1976d2; }
         .kanban-column h2 { margin-top: 0; }
-        .kanban-card { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .kanban-card { background: #fff; padding: 10px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); user-select: none; -webkit-user-drag: none; touch-action: none; cursor: grab; }
+        .drag-ghost { position: fixed; z-index: 9999; pointer-events: none; opacity: 0.8; background: #fff; padding: 10px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -79,20 +81,117 @@
             kanbanBoard.style.display = 'none';
         };
 
+        let currentBoard = null;
+        let dragState = null;
+        let dragListenersAttached = false;
+
+        function updateDragPosition(clientX, clientY) {
+            if (!dragState) return;
+            dragState.ghost.style.left = `${clientX + 12}px`;
+            dragState.ghost.style.top = `${clientY + 12}px`;
+            const el = document.elementFromPoint(clientX, clientY);
+            const col = el ? el.closest('.kanban-column') : null;
+            document.querySelectorAll('.kanban-column').forEach(node => node.classList.remove('drag-over'));
+            if (col) col.classList.add('drag-over');
+        }
+
+        function finishDrag(clientX, clientY) {
+            if (!dragState) return;
+            const el = document.elementFromPoint(clientX, clientY);
+            const col = el ? el.closest('.kanban-column') : null;
+            document.querySelectorAll('.kanban-column').forEach(node => node.classList.remove('drag-over'));
+            dragState.ghost.remove();
+            if (col && currentBoard) {
+                const toColId = col.dataset.columnId;
+                if (toColId && toColId !== dragState.fromColId) {
+                    const fromCol = currentBoard.columns.find(c => c.id === dragState.fromColId);
+                    const toCol = currentBoard.columns.find(c => c.id === toColId);
+                    if (fromCol && toCol && dragState.cardIndex >= 0 && dragState.cardIndex < fromCol.cards.length) {
+                        const [movedCard] = fromCol.cards.splice(dragState.cardIndex, 1);
+                        toCol.cards.push(movedCard);
+                        saveKanban(currentBoard);
+                        renderBoard(currentBoard);
+                    }
+                }
+            }
+            dragState = null;
+        }
+
         function renderBoard(board) {
             const boardColumns = document.getElementById('board-columns');
             boardColumns.innerHTML = '';
+            if (!dragListenersAttached) {
+                dragListenersAttached = true;
+                document.addEventListener('pointermove', e => updateDragPosition(e.clientX, e.clientY));
+                document.addEventListener('pointerup', e => finishDrag(e.clientX, e.clientY));
+                document.addEventListener('mousemove', e => updateDragPosition(e.clientX, e.clientY));
+                document.addEventListener('mouseup', e => finishDrag(e.clientX, e.clientY));
+            }
             board.columns.forEach(col => {
                 const colDiv = document.createElement('div');
                 colDiv.className = 'kanban-column';
                 colDiv.innerHTML = `<h2>${col.title}</h2>`;
-                col.cards.forEach(card => {
+                colDiv.dataset.columnId = col.id;
+                colDiv.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    colDiv.classList.add('drag-over');
+                });
+                colDiv.addEventListener('dragleave', () => {
+                    colDiv.classList.remove('drag-over');
+                });
+                colDiv.addEventListener('drop', e => {
+                    e.preventDefault();
+                    colDiv.classList.remove('drag-over');
+                    const payload = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
+                    if (!payload) return;
+                    const data = JSON.parse(payload);
+                    if (data.fromColId === col.id) return;
+                    const fromCol = board.columns.find(c => c.id === data.fromColId);
+                    if (!fromCol || data.cardIndex < 0 || data.cardIndex >= fromCol.cards.length) return;
+                    const [movedCard] = fromCol.cards.splice(data.cardIndex, 1);
+                    col.cards.push(movedCard);
+                    saveKanban(board);
+                    renderBoard(board);
+                });
+                col.cards.forEach((card, index) => {
                     const cardDiv = document.createElement('div');
                     cardDiv.className = 'kanban-card';
                     cardDiv.textContent = card;
+                    cardDiv.draggable = false;
+                    cardDiv.setAttribute('draggable', 'false');
+                    cardDiv.style.cursor = 'grab';
+                    const startPointerDrag = e => {
+                        if (e.button !== 0) return;
+                        e.preventDefault();
+                        if (dragState) return;
+                        if (cardDiv.setPointerCapture && e.pointerId) {
+                            cardDiv.setPointerCapture(e.pointerId);
+                        }
+                        dragState = {
+                            fromColId: col.id,
+                            cardIndex: index,
+                            ghost: null
+                        };
+                        const ghost = document.createElement('div');
+                        ghost.className = 'drag-ghost';
+                        ghost.textContent = card;
+                        document.body.appendChild(ghost);
+                        dragState.ghost = ghost;
+                        updateDragPosition(e.clientX, e.clientY);
+                    };
+                    cardDiv.addEventListener('pointerdown', startPointerDrag);
+                    cardDiv.addEventListener('mousedown', startPointerDrag);
                     colDiv.appendChild(cardDiv);
                 });
                 boardColumns.appendChild(colDiv);
+            });
+        }
+
+        async function saveKanban(board) {
+            await fetch('/api/kanban/user', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(board)
             });
         }
 
@@ -101,6 +200,7 @@
                 const res = await fetch('/api/kanban/user');
                 if (!res.ok) throw new Error('Failed to load Kanban');
                 const board = await res.json();
+                currentBoard = board;
                 renderBoard(board);
             } catch (e) {
                 renderBoard({columns: []});
