@@ -37,6 +37,45 @@ async def ai_kanban(username: str, request: Request):
         return {"result": answer}
     except Exception as e:
         return {"error": str(e)}
+
+@app.post("/api/ai-kanban-structured/{username}")
+async def ai_kanban_structured(username: str, request: Request):
+    if not OPENAI_API_KEY:
+        return {"error": "OPENAI_API_KEY not set"}
+    try:
+        body = await request.json()
+        kanban = body.get("kanban")
+        question = body.get("question")
+        history = body.get("history", [])
+        messages = []
+        for msg in history:
+            messages.append(msg)
+        # Add explicit system instruction for JSON output
+        messages.append({"role": "system", "content": "You are an AI assistant for a Kanban board. Always respond in valid JSON format. Current Kanban board: " + json.dumps(kanban)})
+        messages.append({"role": "user", "content": question + " (Respond in JSON)"})
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            response_format={"type": "json_object"}
+        )
+        answer = response.choices[0].message.content
+        # Try to parse structured output
+        try:
+            structured = json.loads(answer)
+        except Exception:
+            structured = {"response": answer}
+        # Optionally update Kanban if AI suggests
+        kanban_update = structured.get("kanban_update")
+        if kanban_update:
+            path = get_kanban_path(username)
+            os.makedirs(KANBAN_DIR, exist_ok=True)
+            with open(path, 'w') as f:
+                json.dump(kanban_update, f, indent=2)
+        return structured
+    except Exception as e:
+        return {"error": str(e)}
+
 @app.get("/", response_class=HTMLResponse)
 def hello_world():
     frontend_path = os.path.join(os.path.dirname(__file__), '../frontend/index.html')

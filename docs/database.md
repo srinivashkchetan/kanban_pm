@@ -1,29 +1,56 @@
 # Kanban Database Modeling
 
 ## Approach
-- Store Kanban board data as JSON files for each user.
-- Each file contains columns, cards, and metadata.
+- Store each user's Kanban board as a single JSON file.
+- Keep the schema human-readable and easy to edit.
+- Include stable IDs to support drag-and-drop and future reordering.
 
-## Example Schema
+## JSON Schema (Proposed)
 ```json
 {
   "user": "user",
+  "version": 1,
+  "updated_at": "2026-02-26T00:00:00Z",
   "columns": [
-    {"id": "todo", "title": "To Do", "cards": ["Task 1", "Task 2"]},
-    {"id": "inprogress", "title": "In Progress", "cards": ["Task 3"]},
-    {"id": "done", "title": "Done", "cards": ["Task 4"]}
+    {
+      "id": "todo",
+      "title": "To Do",
+      "cards": [
+        {"id": "card-1", "text": "Task 1", "created_at": "2026-02-26T00:00:00Z"},
+        {"id": "card-2", "text": "Task 2", "created_at": "2026-02-26T00:00:00Z"}
+      ]
+    },
+    {
+      "id": "inprogress",
+      "title": "In Progress",
+      "cards": [
+        {"id": "card-3", "text": "Task 3", "created_at": "2026-02-26T00:00:00Z"}
+      ]
+    },
+    {
+      "id": "done",
+      "title": "Done",
+      "cards": [
+        {"id": "card-4", "text": "Task 4", "created_at": "2026-02-26T00:00:00Z"}
+      ]
+    }
   ]
 }
 ```
 
 ## File Structure
-- `kanban_data/user.json` for each user
+- `kanban_data/<username>.json` per user.
+
+## Notes
+- IDs allow reliable drag-and-drop and later reordering.
+- `version` enables schema evolution.
+- `updated_at` helps detect stale updates.
 
 ## Success Criteria
 - Data is saved and loaded correctly.
-- Schema supports adding/removing columns/cards.
-- Easy to extend for more metadata.
+- Columns and cards can be added, removed, and reordered.
+- Schema can be extended without breaking existing data.
 
 ## Next Steps
-- Implement file read/write logic in backend.
-- Document API endpoints for Kanban operations.
+- Implement read/write logic in the backend (already done).
+- Update API tests to validate IDs and timestamps if needed.
